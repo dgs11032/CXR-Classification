@@ -1,0 +1,55 @@
+version: 2
+experiment: e0
+status: final_pretraining_configuration
+data_config: configs/data_config.yaml
+output_dir: artifacts/experiments/e0
+
+model:
+  architecture: flat
+  backbone: convnext_tiny
+  weights: IMAGENET1K_V1
+  pretrained: true
+  allow_weight_download: false
+  feature_dimension: 768
+  num_classes: 3
+  classification_head: Linear(768, 3)
+  trainable_scope: full
+
+loss:
+  name: CrossEntropyLoss
+  label_smoothing: 0.0
+  class_weighting: none_unweighted_e0_baseline
+
+optimizer:
+  name: AdamW
+  strategy: differential_lr
+  backbone_learning_rate: 0.00001
+  head_learning_rate: 0.0001
+  weight_decay: 0.0001
+
+scheduler:
+  name: CosineAnnealingLR
+  t_max: 15
+  eta_min: 0.000001
+
+training:
+  seed: 42
+  epochs: 15
+  early_stopping_patience: 5
+  selection_metric: macro_f1
+  device: cuda
+  precision: fp32
+  amp: false
+  gradient_clip_norm: 1.0
+  detect_nonfinite: true
+  checkpoint:
+    best_filename: best.pt
+    last_filename: last.pt
+    save_rng_state: true
+
+# Mac 사전 검증 전용. 전체 Epoch 학습에는 사용하지 않는다.
+dry_run:
+  device: auto
+  train_batches: 1
+  validation_samples_per_class: 2
+  output_dir: artifacts/experiments/e0_dryrun

@@ -1,0 +1,30 @@
+__pycache__/
+*.py[cod]
+.venv/
+.DS_Store
+
+# The 1.2 GB source dataset is managed outside version control.
+chest_xray/
+
+# Generated experiment artifacts.
+artifacts/
+
+# Local AWS credentials must never be committed.
+*accessKeys*.csv
+.aws/
+
+# Archives
+*.zip
+
+# Model checkpoints
+*.pt
+*.pth
+*.ckpt
+
+# Environment / secrets
+.env
+.env.*
+
+# Jupyter
+.ipynb_checkpoints/
+P1_CXR/
