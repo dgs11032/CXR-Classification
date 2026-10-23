@@ -46,3 +46,33 @@ Metrics were extracted from local experiment JSON artifacts:
 - E17: `e17/validation_metrics.json` → `e17_normal_preserving_full_validation.macro_f1`
 - E18: `e18/validation_metrics.json` → `e18_normal_preserving_full_validation.macro_f1`
 - E19: `e19_cnn_bv_cv/oof_metrics.json` → `oof.macro_f1`
+
+## E15 Confusion Matrix
+
+![E15 Confusion Matrix](figures/e15_confusion_matrix.png)
+
+The three-class validation set contains 742 images.
+
+| True Class | Normal | Bacterial | Viral |
+|---|---:|---:|---:|
+| Normal | 190 | 0 | 2 |
+| Bacterial | 0 | 295 | 64 |
+| Viral | 3 | 49 | 139 |
+
+- Accuracy: 0.8410
+- Macro-F1: 0.8428
+- Correct predictions: 624 / 742
+- Misclassifications: 118
+- Bacterial/Viral cross-confusions: 113
+
+### Error Analysis
+
+Approximately 95.8% of all misclassifications
+occurred between Bacterial and Viral pneumonia.
+
+This suggests that pneumonia subtype
+discrimination remains the main challenge.
+
+Normal predictions are preserved from
+the E10 routing pathway, while E15
+specializes in Bacterial/Viral classification.

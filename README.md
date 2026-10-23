@@ -81,6 +81,14 @@ and is reported separately.
 All reported scores are research validation metrics,
 not independent clinical test results.
 
+
+### E15 Confusion Matrix
+
+![E15 Confusion Matrix](docs/figures/e15_confusion_matrix.png)
+
+The primary remaining challenge is distinguishing
+Bacterial from Viral pneumonia.
+
 ## Evaluation
 
 - Macro-F1
