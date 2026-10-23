@@ -52,6 +52,35 @@ E16-E19는 추가적인 구조 비교 및 검증 실험으로
 - demo/: Web demo application
 - docs/: Project documentation
 
+## Results & Analysis
+
+### Selected Model Performance
+
+| Model | Validation Macro-F1 |
+|---|---:|
+| E6 - Focal Loss | 0.8252 |
+| E10 - Hierarchical Classification | 0.8309 |
+| **E15 - RAD-DINO Fine-tuning** | **0.8428** |
+
+The E15 score represents the Normal-preserving
+three-class classification pipeline.
+
+### Experiment Comparison
+
+![Experiment Performance](docs/figures/performance_comparison.png)
+
+See the detailed results and research analysis:
+
+- [Experiment Results](docs/experiment_results.md)
+- [Model Architecture](docs/model_architecture.md)
+- [Key Findings](docs/key_findings.md)
+
+E19 uses binary Bacterial/Viral cross-validation
+and is reported separately.
+
+All reported scores are research validation metrics,
+not independent clinical test results.
+
 ## Evaluation
 
 - Macro-F1
