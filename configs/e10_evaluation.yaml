@@ -1,0 +1,40 @@
+version: 1
+experiment: e10
+status: hard_hierarchical_e6_e9_validation_evaluation
+mode: hard_routing_no_training
+
+data_config: configs/data_config.yaml
+e6_config: configs/e6_training.yaml
+e9_config: configs/e9_training.yaml
+e6_checkpoint: artifacts/experiments/e6/best.pt
+e9_checkpoint: artifacts/experiments/e9/best.pt
+output_dir: artifacts/experiments/e10
+
+routing:
+  e6_class_order: [NORMAL, BACTERIAL_PNEUMONIA, VIRAL_PNEUMONIA]
+  e9_class_order: [BACTERIAL_PNEUMONIA, VIRAL_PNEUMONIA]
+  rule: e6_normal_kept_else_e9_binary_plus_one
+  allow_threshold_tuning: false
+  allow_probability_averaging: false
+  allow_calibration: false
+  allow_soft_fusion: false
+
+validation:
+  expected_total_samples: 742
+  expected_bacterial_viral_samples: 550
+  expected_bacterial_count: 359
+  expected_viral_count: 191
+  deterministic_single_view: true
+  no_test_access: true
+
+baseline_sanity:
+  expected_macro_f1: 0.8252387525357788
+  macro_f1_tolerance: 0.000001
+  expected_bacterial_to_viral: 55
+  expected_viral_to_bacterial: 67
+  require_match: true
+
+output:
+  report_filename: hierarchical_metrics.json
+  predictions_filename: hierarchical_predictions.csv
+  overwrite: false

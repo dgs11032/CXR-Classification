@@ -1,0 +1,35 @@
+version: 1
+analysis: e15_e18_readonly_validation_comparison
+data_config: configs/data_config.yaml
+validation_manifest: artifacts/splits/val_manifest.csv
+
+e15:
+  predictions: artifacts/experiments/e15/validation_predictions.csv
+  metrics: artifacts/experiments/e15/validation_metrics.json
+
+e18:
+  predictions: artifacts/experiments/e18/validation_predictions.csv
+  metrics: artifacts/experiments/e18/validation_metrics.json
+  train_history: artifacts/experiments/e18/train_history.json
+
+contract:
+  validation_samples: 742
+  class_counts:
+    NORMAL: 192
+    BACTERIAL_PNEUMONIA: 359
+    VIRAL_PNEUMONIA: 191
+  class_order: [NORMAL, BACTERIAL_PNEUMONIA, VIRAL_PNEUMONIA]
+  e10_normal_rule: e6_pred_zero_kept_else_binary_plus_one
+  e18_fixed_epochs: 3
+  source_files_read_only: true
+  validation_tuning_forbidden: true
+  test_access_forbidden: true
+
+output:
+  base_dir: artifacts/analysis
+  directory_prefix: e15_e18_readonly
+  summary: comparison_summary.json
+  full_sample_comparison: sample_comparison.csv
+  changed_samples: e18_improvements_and_regressions.csv
+  class_metrics: class_metric_comparison.csv
+  train_history_summary: e18_train_history_summary.json

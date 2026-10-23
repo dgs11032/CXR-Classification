@@ -1,0 +1,85 @@
+version: 1
+experiment: e9
+status: e6_cxr_encoder_transfer_binary_specialist
+data_config: configs/data_config.yaml
+output_dir: artifacts/experiments/e9
+
+e8_reference_config: configs/e8_training.yaml
+initialization:
+  method: e6_best_encoder_transfer
+  source_checkpoint: artifacts/experiments/e6/best.pt
+  source_checkpoint_version: 2
+  source_run_kind: e6_full_epoch
+  source_experiment: e6
+  source_classifier: Linear(768, 3)
+  transfer_prefixes: [features., feature_norm.]
+  excluded_source_keys: [classifier.weight, classifier.bias]
+  transferred_encoder_tensor_count: 180
+  target_classifier: Linear(768, 2)
+  strict_state_assembly: true
+
+binary_specialist:
+  class_order: [BACTERIAL_PNEUMONIA, VIRAL_PNEUMONIA]
+  canonical_label_mapping:
+    BACTERIAL_PNEUMONIA: 1
+    VIRAL_PNEUMONIA: 2
+  binary_label_mapping:
+    BACTERIAL_PNEUMONIA: 0
+    VIRAL_PNEUMONIA: 1
+  expected_source_counts:
+    train:
+      BACTERIAL_PNEUMONIA: 2153
+      VIRAL_PNEUMONIA: 1147
+    validation:
+      BACTERIAL_PNEUMONIA: 359
+      VIRAL_PNEUMONIA: 191
+
+model:
+  architecture: flat_binary_specialist
+  backbone: convnext_tiny
+  weights: IMAGENET1K_V1
+  pretrained: false
+  allow_weight_download: false
+  feature_dimension: 768
+  num_classes: 2
+  classification_head: Linear(768, 2)
+  trainable_scope: full
+
+loss:
+  name: BinaryMulticlassFocalLoss
+  gamma: 2.0
+  alpha: null
+  class_weights: null
+  label_smoothing: 0.0
+  reduction: mean
+
+optimizer:
+  name: AdamW
+  strategy: differential_lr
+  backbone_learning_rate: 0.00001
+  head_learning_rate: 0.0001
+  weight_decay: 0.0001
+
+scheduler:
+  name: CosineAnnealingLR
+  t_max: 15
+  eta_min: 0.000001
+
+training:
+  seed: 42
+  epochs: 15
+  early_stopping_patience: 5
+  selection_metric: macro_f1
+  device: cuda
+  precision: fp32
+  amp: false
+  gradient_clip_norm: 1.0
+  detect_nonfinite: true
+  checkpoint:
+    best_filename: best.pt
+    last_filename: last.pt
+    save_rng_state: true
+
+smoke_test:
+  device: auto
+  validation_samples_per_class: 2

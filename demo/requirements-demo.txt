@@ -1,0 +1,2 @@
+# Demo-only dependency. Install separately; do not add this to the training pyproject.
+gradio==5.49.1

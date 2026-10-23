@@ -1,0 +1,80 @@
+version: 1
+experiment: e19
+status: cnn_only_bv_stratified_group_kfold_oof
+output_dir: artifacts/experiments/e19_cnn_bv_cv
+data_config: configs/data_config.yaml
+
+data_contract:
+  development_manifest: artifacts/splits/train_manifest.csv
+  source_samples: 3300
+  source_class_counts:
+    BACTERIAL_PNEUMONIA: 2153
+    VIRAL_PNEUMONIA: 1147
+  canonical_to_binary: {1: 0, 2: 1}
+  binary_class_order: [BACTERIAL_PNEUMONIA, VIRAL_PNEUMONIA]
+  external_validation_access: forbidden
+  test_access: forbidden
+  e15_feature_or_logit_access: forbidden
+  group_key_policy: proxy_group_plus_exact_sha256_duplicate_components_not_verified_patient_id
+
+cv:
+  splitter: StratifiedGroupKFold
+  n_splits: 3
+  seed: 42
+  fold_model_initialization: independent_imagenet1k_v1_per_fold
+  fold_validation_usage: final_evaluation_only_after_fixed_train_only_epochs
+  oof_policy: every_development_image_exactly_once_as_fold_validation
+
+model:
+  backbone: convnext_tiny
+  weights: IMAGENET1K_V1
+  pretrained: true
+  allow_weight_download: false
+  classifier: Linear(768, 2)
+  trainable_scope: final_stage_and_classifier
+  frozen_modules: [features.0, features.1, features.2, features.3, features.4, features.5]
+  trainable_modules: [features.6, features.7, feature_norm, classifier]
+
+preprocessing:
+  source: configs/data_config.yaml
+  required_policy: grayscale_then_rgb3_direct_224_imagenet_normalization
+  train_views: 2
+  fold_validation_views: 1
+
+training:
+  seed: 42
+  epochs: 10
+  optimizer: AdamW
+  backbone_learning_rate: 0.00001
+  classifier_learning_rate: 0.0001
+  weight_decay: 0.0001
+  scheduler: CosineAnnealingLR
+  eta_min: 0.000001
+  loss: CrossEntropyLoss
+  amp: true
+  source_batch_size: 8
+  effective_train_forward_batch_size: 16
+  epoch_policy: fixed_train_only_epochs_no_outer_fold_selection
+  gradient_clip_norm: 1.0
+  max_consecutive_skipped_steps: 8
+  early_stopping: false
+  dynamic_oom_batch_fallback: forbidden_restart_fold_with_explicit_config_change
+
+artifacts:
+  fold_dir_prefix: fold_
+  fold_checkpoint: final.pt
+  fold_history: history.json
+  fold_metrics: metrics.json
+  fold_predictions: validation_predictions.csv
+  oof_predictions: oof_predictions.csv
+  oof_metrics: oof_metrics.json
+  cv_manifest: cv_manifest.json
+  run_metadata: run_metadata.json
+
+future_fold_clean_fusion_interface:
+  allowed: false_until_fold_clean_teacher_oof_exists
+  required_teacher_contract:
+    - teacher_for_fold_k_must_train_only_on_fold_k_train
+    - fold_k_validation_must_never_be_seen_by_teacher_training_or_feature_fitting
+    - only_teacher_oof_predictions_or_features_may_be_fused_with_cnn_oof
+    - full_train_e15_checkpoint_is_explicitly_forbidden_for_inner_fold_validation

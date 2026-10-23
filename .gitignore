@@ -28,3 +28,14 @@ artifacts/
 # Jupyter
 .ipynb_checkpoints/
 P1_CXR/
+
+# Demo sample data
+demo_samples/
+demo_sample_selection.csv
+
+# Logs
+*.log
+
+# Private keys
+*.pem
+*.key

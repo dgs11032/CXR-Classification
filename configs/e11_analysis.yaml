@@ -1,0 +1,43 @@
+version: 1
+experiment: e11
+status: exploratory_validation_confidence_gated_e6_e9_routing
+mode: threshold_sensitivity_no_training
+
+e10_evaluation_config: configs/e10_evaluation.yaml
+output_dir: artifacts/experiments/e11
+
+routing:
+  e6_class_order: [NORMAL, BACTERIAL_PNEUMONIA, VIRAL_PNEUMONIA]
+  e9_class_order: [BACTERIAL_PNEUMONIA, VIRAL_PNEUMONIA]
+  rule: override_e6_subtype_only_on_disagreement_and_e9_confidence_gte_threshold
+  confidence: max_softmax_e9_binary_logits
+  thresholds: [0.50, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90, 0.95]
+  allow_threshold_optimization: false
+  allow_probability_averaging: false
+  allow_calibration: false
+  allow_temperature_scaling: false
+  allow_soft_fusion: false
+
+validation:
+  expected_total_samples: 742
+  expected_bacterial_viral_samples: 550
+  deterministic_single_view: true
+  no_test_access: true
+
+e10_hard_sanity:
+  expected_changed_predictions: 37
+  expected_corrected: 20
+  expected_damaged: 17
+  expected_net_correction: 3
+  require_match: true
+
+exploratory_note: >-
+  Threshold analysis is exploratory and performed on the validation set.
+  The best validation threshold is not an unbiased final performance estimate.
+
+output:
+  threshold_csv: threshold_sensitivity.csv
+  confidence_json: confidence_group_summary.json
+  analysis_json: e11_analysis.json
+  trace_csv: prediction_trace.csv
+  overwrite: false

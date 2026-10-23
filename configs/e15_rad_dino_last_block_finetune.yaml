@@ -1,0 +1,80 @@
+version: 1
+experiment: e15
+status: rad_dino_last_transformer_block_finetune_e14_patch_head
+data_config: configs/data_config.yaml
+output_dir: artifacts/experiments/e15
+
+model:
+  hf_model_id: microsoft/rad-dino
+  revision: main
+  trust_remote_code: false
+  required_transformers_version: 4.57.6
+  expected_hidden_size: 768
+  expected_num_hidden_layers: 12
+  patch_size: 14
+  expected_image_size: 518
+  spatial_pool_grid: [4, 4]
+  trainable_encoder_scope: last_transformer_block_only
+  gradient_checkpointing: disabled_after_runtime_capability_inspection
+
+head:
+  architecture: cls_plus_4x4_patch_attention_pooling_binary_head
+  attention_hidden_dimension: 128
+  classifier_hidden_dimension: 256
+  dropout: 0.1
+  num_classes: 2
+
+runtime:
+  device: cuda
+  batch_size: 1
+  gradient_accumulation_steps: 8
+  num_workers: 0
+  pin_memory: true
+  amp: true
+
+training:
+  seed: 42
+  fixed_epochs: 3
+  optimizer: AdamW
+  encoder_learning_rate: 0.00001
+  head_learning_rate: 0.0001
+  weight_decay: 0.0001
+  checkpoint_policy: final_epoch_only
+  checkpoint_selection_data: none
+  validation_weight_selection: false
+  validation_threshold_selection: false
+  internal_holdout: disabled
+  early_stopping: false
+
+split_contract:
+  train_manifest: artifacts/splits/train_manifest.csv
+  validation_manifest: artifacts/splits/val_manifest.csv
+  binary_class_order: [BACTERIAL_PNEUMONIA, VIRAL_PNEUMONIA]
+  canonical_to_binary: {1: 0, 2: 1}
+  expected_counts:
+    train: {BACTERIAL_PNEUMONIA: 2153, VIRAL_PNEUMONIA: 1147, total: 3300}
+    validation: {NORMAL: 192, BACTERIAL_PNEUMONIA: 359, VIRAL_PNEUMONIA: 191, total: 742}
+  no_test_access: true
+
+e14_initialization:
+  checkpoint: artifacts/experiments/e14/patch_attention_head.pt
+  history: artifacts/experiments/e14/train_history.json
+  metrics: artifacts/experiments/e14/validation_metrics.json
+  predictions: artifacts/experiments/e14/validation_predictions.csv
+  required_history_epochs: 10
+
+e10_routing_input:
+  predictions: artifacts/experiments/e10/hierarchical_predictions.csv
+  metrics: artifacts/experiments/e10/hierarchical_metrics.json
+  normal_rule: e6_pred_zero_kept_else_e15_binary_plus_one
+  expected_e10_macro_f1: 0.830878
+
+artifacts:
+  final_checkpoint: final.pt
+  history: train_history.json
+  metrics: validation_metrics.json
+  predictions: validation_predictions.csv
+  run_metadata: run_metadata.json
+
+smoke_test:
+  samples_per_class: 1

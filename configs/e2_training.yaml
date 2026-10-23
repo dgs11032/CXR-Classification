@@ -1,0 +1,64 @@
+version: 1
+experiment: e2
+status: auxiliary_pneumonia_subtype_ce_ablation
+data_config: configs/data_config.yaml
+output_dir: artifacts/experiments/e2
+
+model:
+  architecture: flat_with_auxiliary_subtype_head
+  backbone: convnext_tiny
+  weights: IMAGENET1K_V1
+  pretrained: true
+  allow_weight_download: false
+  feature_dimension: 768
+  num_classes: 3
+  classification_head: Linear(768, 3)
+  subtype_head: Linear(768, 2)
+  trainable_scope: full
+
+loss:
+  classification:
+    name: CrossEntropyLoss
+    label_smoothing: 0.0
+    class_weighting: none_unweighted_e0_baseline
+  subtype:
+    name: CrossEntropyLoss
+    included_labels: [1, 2]
+    excluded_label: 0
+    temporary_remapping:
+      bacterial_label_1: 0
+      viral_label_2: 1
+    lambda_subtype: 0.3
+    finite_zero_when_no_pneumonia: true
+
+optimizer:
+  name: AdamW
+  strategy: differential_lr
+  backbone_learning_rate: 0.00001
+  head_learning_rate: 0.0001
+  weight_decay: 0.0001
+
+scheduler:
+  name: CosineAnnealingLR
+  t_max: 15
+  eta_min: 0.000001
+
+training:
+  seed: 42
+  epochs: 15
+  early_stopping_patience: 5
+  selection_metric: macro_f1
+  device: cuda
+  precision: fp32
+  amp: false
+  gradient_clip_norm: 1.0
+  detect_nonfinite: true
+  checkpoint:
+    best_filename: best.pt
+    last_filename: last.pt
+    save_rng_state: true
+
+smoke_test:
+  device: auto
+  validation_samples_per_class: 2
+  write_artifacts: false

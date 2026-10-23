@@ -1,0 +1,54 @@
+version: 1
+experiment: e4
+status: bacterial_weight_0_85_ablation_of_e3
+data_config: configs/data_config.yaml
+output_dir: artifacts/experiments/e4
+
+model:
+  architecture: flat
+  backbone: convnext_tiny
+  weights: IMAGENET1K_V1
+  pretrained: true
+  allow_weight_download: false
+  feature_dimension: 768
+  num_classes: 3
+  classification_head: Linear(768, 3)
+  trainable_scope: full
+
+loss:
+  name: CrossEntropyLoss
+  label_smoothing: 0.0
+  class_weighting: modest_bacterial_0_85_e4
+  class_weights: [1.0, 0.85, 1.0]
+  label_order: [Normal, Bacterial, Viral]
+
+optimizer:
+  name: AdamW
+  strategy: differential_lr
+  backbone_learning_rate: 0.00001
+  head_learning_rate: 0.0001
+  weight_decay: 0.0001
+
+scheduler:
+  name: CosineAnnealingLR
+  t_max: 15
+  eta_min: 0.000001
+
+training:
+  seed: 42
+  epochs: 15
+  early_stopping_patience: 5
+  selection_metric: macro_f1
+  device: cuda
+  precision: fp32
+  amp: false
+  gradient_clip_norm: 1.0
+  detect_nonfinite: true
+  checkpoint:
+    best_filename: best.pt
+    last_filename: last.pt
+    save_rng_state: true
+
+smoke_test:
+  device: auto
+  validation_samples_per_class: 2

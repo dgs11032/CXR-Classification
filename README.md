@@ -1,62 +1,84 @@
-# P1 CXR Pneumonia Classification
+# Chest X-ray Pneumonia Classification
 
-계층적 멀티태스크 학습과 지도 대조학습을 이용해 소아 흉부 X-ray를 `NORMAL`, `BACTERIAL_PNEUMONIA`, `VIRAL_PNEUMONIA`로 분류하고 특징 표현과 예측 신뢰성을 분석하는 프로젝트입니다.
+흉부 X-ray 영상 기반 3-class 폐렴 분류 프로젝트입니다.
 
-## 연구 설계
+단순한 분류 성능 개선뿐 아니라 다양한 손실함수,
+학습 전략, 모델 구조 및 특징 표현 방식을 비교하고
+각 접근법의 장단점과 한계를 분석하는 것을 목표로 합니다.
 
-모든 실험은 같은 ConvNeXt-Tiny backbone과 데이터 분할을 사용합니다.
+## Classification Task
 
-| 실험 | 구조 | 지도 대조학습 |
-|---|---|---|
-| E0 | Flat 3-class | 미적용 |
-| E1 | Flat 3-class | 적용 |
-| E2 | Hierarchical detection/subtype | 미적용 |
-| E3 | Hierarchical detection/subtype | 적용 |
+- NORMAL
+- BACTERIAL_PNEUMONIA
+- VIRAL_PNEUMONIA
 
-현재 Day 1 범위는 데이터 검증·분할과 E0 baseline입니다.
+## Research Objectives
 
-## 데이터
+1. CNN 기반 baseline 구축
+2. Loss Function 및 Contrastive Learning 실험
+3. Hierarchical Classification 구조 검증
+4. RAD-DINO 기반 의료영상 특징 표현 활용
+5. Attention 및 Feature Fusion 구조 비교
+6. 모델 성능과 오류 원인 분석
 
-- 원본 S3: `s3://aws-say3-dataset1/pneumonia-xray/chest_xray/`
-- 기본 로컬 루트: `chest_xray/chest_xray/`
-- 공식 test 624장은 최종 모델과 설정을 확정하기 전까지 평가에 사용하지 않습니다.
-- 기존 16장 validation은 사용하지 않고 원본 train에서 파일명 기반 proxy-group 85:15 train/validation을 생성합니다. 실제 환자 ID가 아니므로 patient-level split이라고 주장하지 않습니다.
+## Experiments
 
-AWS 인증 후 전체 데이터를 다음 명령으로 일괄 동기화할 수 있습니다. 현재 공식 데이터는 이 경로에 동기화되어 있으며 S3와 로컬의 5,856개 파일 및 1,236,482,806바이트가 일치함을 확인했습니다.
+| Experiment | Research Direction |
+|------------|--------------------|
+| E0 | Baseline |
+| E1-E9 | Loss Function & Contrastive Learning |
+| E10-E12 | Hierarchical Classification & Routing |
+| E13 | RAD-DINO Linear Probe |
+| E14 | RAD-DINO Patch Specialist |
+| E15 | RAD-DINO Last-Block Fine-tuning |
+| E16 | Global-Local Feature Fusion |
+| E17 | RAD-DINO Pyramid Pooling |
+| E18 | CNN-RAD-DINO Residual Fusion |
+| E19 | CNN-only Group Cross-Validation |
 
-```bash
-aws login
-aws s3 sync s3://aws-say3-dataset1/pneumonia-xray/chest_xray/ chest_xray/chest_xray/ --region ap-northeast-2
-```
+## Final Model
 
-## 검증 실행
+주요 실험에서 E15를 최종 선정 모델로 사용했습니다.
 
-워크스페이스 공용 가상환경의 필수 패키지를 사용합니다. 현재 단계별 검증 명령은 다음과 같습니다.
+E16-E19는 추가적인 구조 비교 및 검증 실험으로
+구분하여 기록합니다.
 
-```bash
-cd P1_CXR
-../.venv/bin/python scripts/audit_dataset.py
-../.venv/bin/python scripts/create_splits.py
-../.venv/bin/python scripts/eda_images.py
-../.venv/bin/python scripts/validate_data_pipeline.py
-../.venv/bin/python scripts/validate_e0_dryrun.py
-```
+## Project Structure
 
-전체 E0 학습 진입점은 실수로 실행되지 않도록 명시적 승인 플래그가 필요합니다. 현재 STEP 7에서는 실행하지 않습니다.
+- configs/: Experiment configurations
+- scripts/: Training, evaluation and analysis scripts
+- src/p1_cxr/: Model architectures and training modules
+- src/data/: Data loading and preprocessing
+- demo/: Web demo application
+- docs/: Project documentation
 
-```bash
-# 사용자 승인 후 다음 단계에서만 실행
-../.venv/bin/python scripts/train.py \
-  --config configs/e0_training.yaml \
-  --confirm-full-training
-```
+## Evaluation
 
-## 현재 공식 산출물
+- Macro-F1
+- Class-wise Precision / Recall / F1
+- Confusion Matrix
+- Error Analysis
 
-- 데이터 감사: `artifacts/data_audit/`
-- 고정 분할: `artifacts/splits/`
-- 이미지 EDA: `artifacts/eda/`
-- 데이터 파이프라인 검증: `artifacts/data_pipeline/`
-- E0 Dry-run: `artifacts/experiments/e0_dryrun/`
+실험별 수치와 세부 평가 결과는 검증된
+실험 산출물을 기준으로 관리합니다.
 
-> 본 프로젝트는 교육·연구용이며 실제 의료 진단을 대체하지 않습니다.
+## Data
+
+Chest X-ray 영상 데이터를 사용합니다.
+
+데이터 누수 위험을 고려하여 분할 및 평가 전략을
+검토하였으며, 공식 test 데이터는 개발 과정의
+모델 선택에 사용하지 않는 것을 원칙으로 합니다.
+
+원본 영상 데이터 및 대용량 모델 체크포인트는
+GitHub 저장소에 포함하지 않습니다.
+
+## Demo
+
+웹 데모 관련 소스코드는 demo/ 디렉터리에
+보관합니다.
+
+## Disclaimer
+
+본 프로젝트는 교육 및 연구 목적이며,
+실제 임상 진단을 위한 의료기기가 아닙니다.

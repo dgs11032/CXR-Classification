@@ -1,0 +1,74 @@
+version: 1
+experiment: e13
+status: rad_dino_frozen_feature_extraction_linear_probe
+data_config: configs/data_config.yaml
+output_dir: artifacts/experiments/e13
+
+model:
+  hf_model_id: microsoft/rad-dino
+  revision: main
+  trust_remote_code: false
+  encoder_mode: frozen_eval_inference_mode_cls_embedding
+  expected_hidden_size: 768
+  use_auto_image_processor: true
+  use_auto_model: true
+  preprocessing: model_native_only
+
+runtime:
+  device: cuda
+  batch_size: 2
+  num_workers: 0
+  pin_memory: true
+  amp: true
+  cache_features: true
+
+split_contract:
+  train_manifest: artifacts/splits/train_manifest.csv
+  validation_manifest: artifacts/splits/val_manifest.csv
+  expected_counts:
+    train:
+      total: 4448
+      NORMAL: 1148
+      BACTERIAL_PNEUMONIA: 2153
+      VIRAL_PNEUMONIA: 1147
+    validation:
+      total: 742
+      NORMAL: 192
+      BACTERIAL_PNEUMONIA: 359
+      VIRAL_PNEUMONIA: 191
+  no_test_access: true
+  labels:
+    NORMAL: 0
+    BACTERIAL_PNEUMONIA: 1
+    VIRAL_PNEUMONIA: 2
+
+linear_probe:
+  scaler: StandardScaler
+  classifier: LogisticRegression
+  C: 1.0
+  seed: 42
+  max_iter: 1000
+  solver: lbfgs
+  validation_hyperparameter_search: false
+  fit_on: train_features_only
+
+artifacts:
+  cache_dir: feature_cache
+  train_features: train_features.npz
+  validation_features: validation_features.npz
+  train_index: train_index.csv
+  validation_index: validation_index.csv
+  cache_metadata: cache_metadata.json
+  scaler: scaler.joblib
+  classifier: linear_probe.joblib
+  metrics: validation_metrics.json
+  predictions: validation_predictions.csv
+  run_metadata: run_metadata.json
+
+comparison_references:
+  e6_macro_f1: 0.8252387525357788
+  e10_macro_f1: 0.830878
+  require_same_validation_manifest: true
+
+smoke_test:
+  samples_per_class: 2

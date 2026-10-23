@@ -1,0 +1,103 @@
+version: 1
+experiment: e17
+status: frozen_e15_rad_dino_pspnet_inspired_multiscale_pyramid_pooling_bv_classifier
+data_config: configs/data_config.yaml
+output_dir: artifacts/experiments/e17
+
+model:
+  hf_model_id: microsoft/rad-dino
+  revision: main
+  trust_remote_code: false
+  required_transformers_version: 4.57.6
+  expected_hidden_size: 768
+  expected_num_hidden_layers: 12
+  patch_size: 14
+  expected_image_size: 518
+  e15_restore: base_rad_dino_plus_strict_final_last_block_and_patch_attention_head
+  encoder_trainable: false
+  e15_head_trainable: false
+
+e15_head:
+  architecture: cls_plus_4x4_patch_attention_pooling_binary_head
+  attention_hidden_dimension: 128
+  classifier_hidden_dimension: 256
+  dropout: 0.1
+  num_classes: 2
+
+pyramid_pooling:
+  method: adaptive_average_pool2d_on_rad_dino_patch_grid
+  patch_grid: [37, 37]
+  scales: [[1, 1], [2, 2], [3, 3], [6, 6]]
+  tokens_per_scale: [1, 4, 9, 36]
+  total_spatial_tokens: 50
+  token_order: scale_order_then_row_major_within_scale
+  cache_dtype: float16
+
+multiscale_head:
+  architecture: per_scale_spatial_attention_pooling_plus_e15_cls_mlp
+  attention_hidden_dimension: 128
+  descriptor_count: 5
+  feature_dimension: 3840
+  classifier_hidden_dimension: 128
+  dropout: 0.3
+  num_classes: 2
+
+runtime:
+  device: cuda
+  feature_batch_size: 1
+  head_batch_size: 64
+  num_workers: 0
+  pin_memory: true
+  amp: true
+  cache_features: true
+
+training:
+  seed: 42
+  fixed_epochs: 5
+  optimizer: AdamW
+  learning_rate: 0.001
+  weight_decay: 0.0001
+  checkpoint_policy: final_epoch_only
+  internal_holdout: disabled
+  early_stopping: false
+  validation_weight_selection: false
+  validation_threshold_selection: false
+  hyperparameter_search: false
+
+split_contract:
+  train_manifest: artifacts/splits/train_manifest.csv
+  validation_manifest: artifacts/splits/val_manifest.csv
+  binary_class_order: [BACTERIAL_PNEUMONIA, VIRAL_PNEUMONIA]
+  canonical_to_binary: {1: 0, 2: 1}
+  expected_counts:
+    train: {BACTERIAL_PNEUMONIA: 2153, VIRAL_PNEUMONIA: 1147, total: 3300}
+    validation: {NORMAL: 192, BACTERIAL_PNEUMONIA: 359, VIRAL_PNEUMONIA: 191, total: 742}
+  no_test_access: true
+
+e15_initialization:
+  final_checkpoint: artifacts/experiments/e15/final.pt
+  predictions: artifacts/experiments/e15/validation_predictions.csv
+  metrics: artifacts/experiments/e15/validation_metrics.json
+  global_baseline_probability_atol: 0.0005
+
+e10_routing_input:
+  predictions: artifacts/experiments/e10/hierarchical_predictions.csv
+  normal_rule: e6_pred_zero_kept_else_e17_binary_plus_one
+  expected_e10_macro_f1: 0.830878
+
+artifacts:
+  cache_dir: feature_cache
+  train_features: train_bv_pyramid_features.npz
+  train_index: train_bv_index.csv
+  train_metadata: train_cache_metadata.json
+  validation_features: validation_pyramid_features.npz
+  validation_index: validation_index.csv
+  validation_metadata: validation_cache_metadata.json
+  final_checkpoint: final_multiscale_head.pt
+  history: train_history.json
+  metrics: validation_metrics.json
+  predictions: validation_predictions.csv
+  run_metadata: run_metadata.json
+
+smoke_test:
+  samples_per_class: 1
